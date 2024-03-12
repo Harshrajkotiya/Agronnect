@@ -1,0 +1,46 @@
+include:
+  - { project: 'ag-infrastructure/devops/gitlab-cicd', ref: 'v1.0.0', file: 'base-gitlab-workflow.yaml' }
+
+# Environmental specific jobs
+
+# Dev
+"Docker-build-Dev":
+  extends: .docker_build_dev
+
+"Push-image-to-ECR-Dev":
+  extends: .ecr_push_dev
+  needs:
+    - Docker-build-Dev
+
+"Deploy-Dev":
+  extends: .eks_deploy_dev
+  needs:
+    - Push-image-to-ECR-Dev  
+
+# Stage
+"Docker-build-Stage":
+  extends: .docker_build_stage
+
+"Push-image-to-ECR-Stage":
+  extends: .ecr_push_stage
+  needs:
+    - Docker-build-Stage
+
+"Deploy-Stage":
+  extends: .eks_deploy_stage
+  needs:
+    - Push-image-to-ECR-Stage
+
+# Prod
+"Docker-build-Prod":
+  extends: .docker_build_prod
+
+"Push-image-to-ECR-Prod":
+  extends: .ecr_push_prod
+  needs:
+    - Docker-build-Prod
+
+"Deploy-Prod":
+  extends: .eks_deploy_prod
+  needs:
+    - Push-image-to-ECR-Prod

@@ -1,0 +1,34 @@
+{{- if .Values.ingress.enabled -}}
+{{- $fullName := include "vue.fullname" . -}}
+{{- $ingressPath := .Values.ingress.path -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.ingress.host }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ template "vue.name" . }}
+    chart: {{ template "vue.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+{{- with .Values.ingress.annotations }}
+  annotations:
+{{ toYaml . | indent 4 }}
+{{- end }}
+spec:
+  ingressClassName: alb
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          {{- range .Values.ingress.paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ .backend.service.name }}
+                port:
+                  number: {{ .backend.service.port.number }}
+          {{- end }}
+{{- end }}
+

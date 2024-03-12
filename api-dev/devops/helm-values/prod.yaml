@@ -1,0 +1,49 @@
+# Used as Helm release name
+app_name: conversations-api
+
+# Used to deploy app in specific namespace
+namespace: prod
+
+image:
+  repository: 795540767663.dkr.ecr.eu-west-3.amazonaws.com/dev-conversations-api
+  pullPolicy: IfNotPresent
+
+deploymen: 
+  enabled: true
+
+replicas: 1
+  
+resources:
+  enabled: false
+  values:
+    requests:
+      memory: "200Mi"
+      cpu: "200m"
+    limits:
+      memory: "400Mi"
+      cpu: "400m"
+
+ingress:
+  enabled: true
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:eu-west-3:795540767663:certificate/d4c2642f-9a7a-417e-8a54-6dbc13b7c9f3
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
+    alb.ingress.kubernetes.io/actions.ssl-redirect: '{"Type": "redirect", "RedirectConfig": { "Protocol": "HTTPS", "Port": "443", "StatusCode": "HTTP_301"}}'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "30" # in seconds
+    alb.ingress.kubernetes.io/healthcheck-path: /
+    alb.ingress.kubernetes.io/healthcheck-success-codes: "200,404"
+    alb.ingress.kubernetes.io/healty-threshold-count: "1"
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: "3"
+    alb.ingress.kubernetes.io/group.name: conversations-apps
+    external-dns.alpha.kubernetes.io/hostname: agronnect.com
+  host: conversations.agronnect.com
+  paths:
+    - path: /api/v1
+      pathType: Prefix
+      backend:
+        service:
+          name: conversations-api
+          port:
+            number: 80

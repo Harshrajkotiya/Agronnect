@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Release.Name }}
+  replicas: {{ .Values.replicas }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 50%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Release.Name }}
+    spec:
+{{- if .Values.workload_affinity.enabled -}}
+{{- with .Values.workload_affinity.affinity }}
+      affinity:
+{{ toYaml . | indent 7 }}
+{{- end }}
+{{- end }}
+      initContainers:
+        - image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          name: migrations-and-seeders
+          command: ["php", "artisan", "migrate", "--seed", "--force"]
+      containers:
+        - image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: Always
+          name: {{ .Release.Name }}
+          lifecycle:
+            postStart:
+              exec:
+                command: ["/bin/sh", "-c", "php artisan config:clear && php artisan cache:clear"]
+          ports:
+            - containerPort: 80
+{{- if .Values.resources.enabled }}
+          resources:
+{{ toYaml .Values.resources.values | indent 12 }}
+{{- end }}   
+        
